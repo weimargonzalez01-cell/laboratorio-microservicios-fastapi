@@ -1,71 +1,20 @@
 _format_version: "3.0"
 services:
-  nginx:
-    image: nginx:alpine
-    ports: ["80:80"]
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
-    depends_on: [kong]
-    networks: [publica, privada]
-
-  kong:
-    image: kong:3
-    environment:
-      KONG_DATABASE: "off"
-      KONG_DECLARATIVE_CONFIG: /kong/kong.yml
-    volumes:
-      - ./kong/kong.yml:/kong/kong.yml:ro
-    depends_on: [usuarios, productos, pedidos]
-    networks: [privada]
-
-  usuarios:
-    build: ./usuarios
-    environment:
-      DATABASE_URL: postgresql://postgres:app@db-usuarios/usuarios
-    depends_on: [db-usuarios]
-    networks: [privada]
-
-  db-usuarios:
-    image: postgres:16-alpine
-    environment: {POSTGRES_PASSWORD: app, POSTGRES_DB: usuarios}
-    volumes:
-      - datos-usuarios:/var/lib/postgresql/data
-    networks: [privada]
-
-  productos:
-    build: ./productos
-    environment:
-      DATABASE_URL: postgresql://postgres:app@db-productos/productos
-    depends_on: [db-productos]
-    networks: [privada]
-
-  db-productos:
-    image: postgres:16-alpine
-    environment: {POSTGRES_PASSWORD: app, POSTGRES_DB: productos}
-    volumes:
-      - datos-productos:/var/lib/postgresql/data
-    networks: [privada]
-
-  pedidos:
-    build: ./pedidos
-    environment:
-      DATABASE_URL: postgresql://postgres:app@db-pedidos/pedidos
-    depends_on: [db-pedidos]
-    networks: [privada]
-
-  db-pedidos:
-    image: postgres:16-alpine
-    environment: {POSTGRES_PASSWORD: app, POSTGRES_DB: pedidos}
-    volumes:
-      - datos-pedidos:/var/lib/postgresql/data
-    networks: [privada]
-
-volumes:
-  datos-usuarios:
-  datos-productos:
-  datos-pedidos:
-
-networks:
-  publica:
-  privada:
-    internal: true
+  - name: usuarios
+    url: http://usuarios:8000
+    routes:
+      - name: ruta-usuarios
+        paths: [/usuarios]
+        strip_path: false
+  - name: productos
+    url: http://productos:8000
+    routes:
+      - name: ruta-productos
+        paths: [/productos]
+        strip_path: false
+  - name: pedidos
+    url: http://pedidos:8000
+    routes:
+      - name: ruta-pedidos
+        paths: [/pedidos]
+        strip_path: false

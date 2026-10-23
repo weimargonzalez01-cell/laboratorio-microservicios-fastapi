@@ -1,17 +1,3 @@
-x-servicio: &servicio
-  networks: [privada]
-  restart: unless-stopped
-  healthcheck:
-    test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8000/health-interno')"]
-    interval: 10s
-    timeout: 5s
-    retries: 5
-
-x-db: &db
-  image: postgres:16-alpine
-  networks: [privada]
-  restart: unless-stopped
-
 services:
   nginx:
     image: nginx:alpine
@@ -26,53 +12,52 @@ services:
     environment:
       KONG_DATABASE: "off"
       KONG_DECLARATIVE_CONFIG: /kong/kong.yml
-      KONG_PROXY_LISTEN: 0.0.0.0:8000
     volumes:
       - ./kong/kong.yml:/kong/kong.yml:ro
     depends_on: [usuarios, productos, pedidos]
     networks: [privada]
 
   usuarios:
-    <<: *servicio
     build: ./usuarios
     environment:
-      DATABASE_URL: postgresql://postgres:${DB_PASSWORD}@db-usuarios/usuarios
-    depends_on:
-      db-usuarios: {condition: service_healthy}
+      DATABASE_URL: postgresql+psycopg2://postgres:app@db-usuarios/usuarios
+    depends_on: [db-usuarios]
+    networks: [privada]
 
   db-usuarios:
-    <<: *db
-    environment: {POSTGRES_PASSWORD: "${DB_PASSWORD}", POSTGRES_DB: usuarios}
-    volumes: [datos-usuarios:/var/lib/postgresql/data]
-    healthcheck: {test: ["CMD-SHELL", "pg_isready -U postgres -d usuarios"], interval: 5s, timeout: 5s, retries: 10}
+    image: postgres:16-alpine
+    environment: {POSTGRES_PASSWORD: app, POSTGRES_DB: usuarios}
+    volumes:
+      - datos-usuarios:/var/lib/postgresql/data
+    networks: [privada]
 
   productos:
-    <<: *servicio
     build: ./productos
     environment:
-      DATABASE_URL: postgresql://postgres:${DB_PASSWORD}@db-productos/productos
-    depends_on:
-      db-productos: {condition: service_healthy}
+      DATABASE_URL: postgresql+psycopg2://postgres:app@db-productos/productos
+    depends_on: [db-productos]
+    networks: [privada]
 
   db-productos:
-    <<: *db
-    environment: {POSTGRES_PASSWORD: "${DB_PASSWORD}", POSTGRES_DB: productos}
-    volumes: [datos-productos:/var/lib/postgresql/data]
-    healthcheck: {test: ["CMD-SHELL", "pg_isready -U postgres -d productos"], interval: 5s, timeout: 5s, retries: 10}
+    image: postgres:16-alpine
+    environment: {POSTGRES_PASSWORD: app, POSTGRES_DB: productos}
+    volumes:
+      - datos-productos:/var/lib/postgresql/data
+    networks: [privada]
 
   pedidos:
-    <<: *servicio
     build: ./pedidos
     environment:
-      DATABASE_URL: postgresql://postgres:${DB_PASSWORD}@db-pedidos/pedidos
-    depends_on:
-      db-pedidos: {condition: service_healthy}
+      DATABASE_URL: postgresql+psycopg2://postgres:app@db-pedidos/pedidos
+    depends_on: [db-pedidos]
+    networks: [privada]
 
   db-pedidos:
-    <<: *db
-    environment: {POSTGRES_PASSWORD: "${DB_PASSWORD}", POSTGRES_DB: pedidos}
-    volumes: [datos-pedidos:/var/lib/postgresql/data]
-    healthcheck: {test: ["CMD-SHELL", "pg_isready -U postgres -d pedidos"], interval: 5s, timeout: 5s, retries: 10}
+    image: postgres:16-alpine
+    environment: {POSTGRES_PASSWORD: app, POSTGRES_DB: pedidos}
+    volumes:
+      - datos-pedidos:/var/lib/postgresql/data
+    networks: [privada]
 
 volumes:
   datos-usuarios:
